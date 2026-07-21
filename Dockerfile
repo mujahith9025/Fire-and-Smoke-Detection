@@ -19,10 +19,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application files
 COPY . .
 
-# Expose Flask default port
-EXPOSE 5000
-
+# Expose Render default port
+EXPOSE 10000
+ENV PORT=10000
 ENV FLASK_APP=app.py
 ENV PYTHONUNBUFFERED=1
 
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:10000", "--workers", "1", "--threads", "2", "app:app"]
