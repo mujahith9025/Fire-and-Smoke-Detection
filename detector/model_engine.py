@@ -18,7 +18,17 @@ class FireSmokeDetector:
         self.model_path = model_path
         self.model = None
         self.img_size = config.IMG_SIZE
-        self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+        self.face_cascade = None
+        
+        # Safe face cascade initialization for headless Linux environments
+        try:
+            if hasattr(cv2, "data") and hasattr(cv2.data, "haarcascades") and cv2.data.haarcascades:
+                cascade_path = os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml")
+                if os.path.exists(cascade_path):
+                    self.face_cascade = cv2.CascadeClassifier(cascade_path)
+        except Exception as e:
+            logger.warning(f"Face cascade initialization notice: {e}")
+
         self._load_or_build_model()
 
     def _load_or_build_model(self):
@@ -27,7 +37,7 @@ class FireSmokeDetector:
             config.MODEL_PATH,
             config.LEGACY_MODEL_PATH,
             os.path.join(config.BASE_DIR, "fire_smoke_model.h5"),
-            r"d:\Project\Fire And Smoke  Detection\flask_app\fire_smoke_model.h5"
+            os.path.join(config.BASE_DIR, "models", "fire_smoke_model.h5")
         ]
 
         for target_file in target_files:
@@ -69,16 +79,19 @@ class FireSmokeDetector:
 
     def has_face(self, frame_bgr):
         """Detects human faces to prevent warm lighting false alerts."""
-        if not config.SUPPRESS_FIRE_ON_FACE:
+        if not config.SUPPRESS_FIRE_ON_FACE or self.face_cascade is None or self.face_cascade.empty():
             return False
-        gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
-        faces = self.face_cascade.detectMultiScale(
-            gray,
-            scaleFactor=1.05,
-            minNeighbors=4,
-            minSize=(30, 30)
-        )
-        return len(faces) > 0
+        try:
+            gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+            faces = self.face_cascade.detectMultiScale(
+                gray,
+                scaleFactor=1.05,
+                minNeighbors=4,
+                minSize=(30, 30)
+            )
+            return len(faces) > 0
+        except Exception:
+            return False
 
     def compute_multispectral_fire_score(self, frame_bgr):
         """
