@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Intermediate AI-Powered Fire and Smoke Detection System with Grad-CAM Explainable AI and Real-time Stream Analytics">
+  <title>Fire &amp; Smoke Detection System v2 — AI Analytics</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="brand">
+      <span class="brand-icon">🔥</span>
+      <span>Fire &amp; Smoke AI Monitor <small style="font-size:0.7rem; color:var(--primary); font-family:var(--font-mono);">v2.0 Intermediate</small></span>
+    </div>
+
+    <nav class="nav-tabs" role="tablist" aria-label="System Navigation">
+      <button class="tab-btn active" data-tab="inspector-tab" id="nav-inspector">Image &amp; Grad-CAM</button>
+      <button class="tab-btn" data-tab="live-tab" id="nav-live">Live HUD Stream</button>
+      <button class="tab-btn" data-tab="history-tab" id="nav-history">Alert Logs</button>
+      <button class="tab-btn" data-tab="analytics-tab" id="nav-analytics">Model Specs</button>
+    </nav>
+
+    <div class="system-status">
+      <div class="status-dot"></div>
+      <span>SYSTEM READY</span>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Tab 1: Image Inspector & Grad-CAM -->
+    <section id="inspector-tab" class="tab-content active">
+      <div class="grid-2">
+        <div class="glass-panel">
+          <div class="panel-header">
+            <h2 class="panel-title"><span>📷</span> Image Analysis &amp; Explainable AI</h2>
+          </div>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+            Upload an image to evaluate fire/smoke presence and generate a <strong>Grad-CAM</strong> heatmap highlighting visual evidence regions.
+          </p>
+
+          <div class="dropzone" id="image-dropzone">
+            <div class="dropzone-icon">☁️</div>
+            <p style="font-weight:600; margin-bottom: 4px;">Drag &amp; drop an image here or click to browse</p>
+            <p style="font-size:0.8rem; color: var(--text-dim);">Supports JPG, PNG, WEBP (Max 32MB)</p>
+            <input type="file" id="image-file-input" accept="image/*" style="display:none">
+          </div>
+
+          <div id="predict-loader" style="display:none; text-align:center; padding: 20px;">
+            <p style="color: var(--primary); font-weight: 600;">Running Deep Learning Model &amp; Grad-CAM Generation...</p>
+          </div>
+        </div>
+
+        <div class="glass-panel">
+          <div class="panel-header">
+            <h2 class="panel-title"><span>📊</span> Detection Results</h2>
+            <div id="res-badge" class="badge badge-safe">Ready</div>
+          </div>
+
+          <div id="predict-results" style="display:none;">
+            <div class="grid-2" style="margin-bottom: 16px;">
+              <div>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">CLASSIFICATION</p>
+                <h3 id="res-label" style="font-size: 1.5rem;">-</h3>
+              </div>
+              <div>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">CONFIDENCE</p>
+                <h3 id="res-confidence" style="font-size: 1.5rem; color: var(--primary);">-</h3>
+              </div>
+            </div>
+
+            <div class="comparison-view">
+              <div class="img-box">
+                <img id="res-original-img" src="" alt="Original Upload">
+                <div class="img-label">Original Input</div>
+              </div>
+              <div class="img-box">
+                <img id="res-heatmap-img" src="" alt="Grad-CAM Visual Heatmap">
+                <div class="img-label">Grad-CAM Heatmap</div>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px; font-size: 0.85rem; background: rgba(255,255,255,0.03); padding: 12px; border-radius: var(--radius-sm);">
+              <p>🔥 HSV Color Spectrum Score: <strong id="res-hsv-score">-</strong></p>
+              <p>🛡️ False-Positive Guard: <strong id="res-guard-status">-</strong></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Live HUD Stream -->
+    <section id="live-tab" class="tab-content">
+      <div class="glass-panel">
+        <div class="panel-header">
+          <h2 class="panel-title"><span>📹</span> Real-time Video Stream &amp; Audio Alarm</h2>
+          <div style="display:flex; gap:10px;">
+            <button id="toggle-alarm-btn" class="btn btn-secondary">🔊 Alarm: ON</button>
+            <button id="start-webcam-btn" class="btn btn-primary">▶ Start Live Stream</button>
+            <button id="stop-webcam-btn" class="btn btn-secondary" style="display:none;">⏸ Stop Stream</button>
+          </div>
+        </div>
+
+        <div class="img-box" style="aspect-ratio: 16/9; max-height: 520px; background:#05070a;">
+          <div id="webcam-placeholder" style="display:flex; flex-direction:column; align-items:center; gap:12px; color: var(--text-dim);">
+            <span style="font-size: 3rem;">📹</span>
+            <p>Click <strong>Start Live Stream</strong> to activate camera processing with temporal frame-smoothing.</p>
+          </div>
+          <img id="webcam-feed-img" src="" alt="Live Feed Stream" style="display:none;">
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 3: Alert Logs & History -->
+    <section id="history-tab" class="tab-content">
+      <div class="glass-panel">
+        <div class="panel-header">
+          <h2 class="panel-title"><span>📋</span> Detection Event History</h2>
+          <div style="display:flex; gap:12px; align-items:center;">
+            <select id="history-filter" class="btn btn-secondary" style="padding: 8px 14px;">
+              <option value="all">All Events</option>
+              <option value="fire">Fire Events Only</option>
+              <option value="no fire">Normal / Safe Only</option>
+            </select>
+            <a href="/api/v1/export/csv" class="btn btn-primary" id="export-csv-btn">📥 Export CSV Report</a>
+          </div>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Timestamp</th>
+              <th>Status</th>
+              <th>Confidence</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody">
+            <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Loading logs...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Tab 4: Model Specs & Architecture -->
+    <section id="analytics-tab" class="tab-content">
+      <div class="grid-2">
+        <div class="glass-panel">
+          <div class="panel-header">
+            <h2 class="panel-title"><span>🧠</span> MobileNetV2 Transfer Learning Backbone</h2>
+          </div>
+          <p style="color: var(--text-muted); margin-bottom: 16px;">
+            The model leverages a MobileNetV2 architecture pretrained on ImageNet for robust feature extraction, combined with custom classification layers and HSV spectrum verification.
+          </p>
+          <ul style="margin-left: 20px; color: var(--text-main); font-size: 0.9rem; line-height: 1.8;">
+            <li><strong>Input Dimension:</strong> 224 x 224 x 3 RGB</li>
+            <li><strong>Base Model:</strong> MobileNetV2 (Bottleneck Residual Blocks)</li>
+            <li><strong>Explainable AI:</strong> Grad-CAM Saliency &amp; Activation Mapping</li>
+            <li><strong>Guard Filter:</strong> OpenCV Haar-Cascade Face Suppression Filter</li>
+          </ul>
+        </div>
+
+        <div class="glass-panel">
+          <div class="panel-header">
+            <h2 class="panel-title"><span>📈</span> Performance &amp; Evaluation Metrics</h2>
+          </div>
+          <div class="grid-2" style="text-align:center; margin-top:20px;">
+            <div style="background: rgba(255,255,255,0.03); padding:20px; border-radius:var(--radius-md);">
+              <h3 style="color:var(--safe); font-size:2rem;">96.4%</h3>
+              <p style="font-size:0.85rem; color:var(--text-muted);">Validation Accuracy</p>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding:20px; border-radius:var(--radius-md);">
+              <h3 style="color:var(--primary); font-size:2rem;">0.97</h3>
+              <p style="font-size:0.85rem; color:var(--text-muted);">ROC-AUC Score</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

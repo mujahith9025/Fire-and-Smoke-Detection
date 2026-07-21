@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  fire_smoke_detector:
+    build: .
+    container_name: fire_smoke_detector_v2
+    ports:
+      - "5000:5000"
+    environment:
+      - SECRET_KEY=fire-smoke-v2-prod-key
+    volumes:
+      - ./logs:/app/logs
+      - ./static/uploads:/app/static/uploads
+    restart: unless-stopped
